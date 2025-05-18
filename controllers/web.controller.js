@@ -2,6 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const urlPrincipal = 'https://alogar.cl'
 const pool = require('../PostgreSQL/db');
+const excelData = require('../EXCEL/read_excel');
 
 class WebController {
     async scrappingCategories(req, res) {
@@ -19,6 +20,9 @@ class WebController {
                 };
                 categories.push(category);
             });
+
+            const truncateQuery = 'TRUNCATE TABLE categories RESTART IDENTITY CASCADE';
+            await pool.query(truncateQuery);
 
             const query = 'INSERT INTO categories (category, category_image, category_url) VALUES ($1, $2, $3)';
             const insertPromises = categories.map(category => {
@@ -63,6 +67,12 @@ class WebController {
                     products: categoryProducts
                 });
             }
+
+            const excelData = excelData.data;
+            console.log('Excel Data:', excelData);
+
+            const truncateQuery = 'TRUNCATE TABLE products RESTART IDENTITY CASCADE';
+            await pool.query(truncateQuery);
 
             const query = 'INSERT INTO products (product, price, product_url, product_image, id_category) VALUES ($1, $2, $3, $4, $5)';
             const insertPromises = products.flatMap(category => {
