@@ -2,7 +2,8 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const urlPrincipal = 'https://alogar.cl'
 const pool = require('../PostgreSQL/db');
-const excelData = require('../EXCEL/read_excel');
+const excelPath = 'C:\\Users\\varga\\OneDrive\\Documentos\\Proyecto-Alogar\\ALOGAR-BACK\\EXCEL\\ALOGAR_table_productos.xlsx'
+const readExcel = require('../EXCEL/read_excel.js');
 
 class WebController {
     async scrappingCategories(req, res) {
@@ -44,6 +45,10 @@ class WebController {
 
             const products = [];
 
+            let dataExcel = await readExcel(excelPath);
+            let dataExcelCodes = dataExcel.map(item => item['Col2']);
+            let dataExcelProducts = dataExcel.map(item => item['Col3']);
+
             for (const category of categories.rows) {
                 const cantPages = await changeUrl(category.category_url);
 
@@ -57,6 +62,7 @@ class WebController {
                             price: Number($(element).find('.price-item.price-item--regular').text().trim().replace('$', '').replace('.', '')),
                             product_url: urlPrincipal + $(element).find('a').attr('href'),
                             product_image: 'https:' + $(element).find('.grid-view-item__image').get(0).attribs['data-src'].split(' ')[0].replace('{width}', '300'),
+                            product_code: dataExcelCodes[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] !== undefined ? dataExcelCodes[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] : null,
                         };
                         categoryProducts.push(product);
                     });
@@ -68,16 +74,13 @@ class WebController {
                 });
             }
 
-            const excelData = excelData.data;
-            console.log('Excel Data:', excelData);
-
             const truncateQuery = 'TRUNCATE TABLE products RESTART IDENTITY CASCADE';
             await pool.query(truncateQuery);
 
-            const query = 'INSERT INTO products (product, price, product_url, product_image, id_category) VALUES ($1, $2, $3, $4, $5)';
+            const query = 'INSERT INTO products (product, price, product_url, product_image, id_category, product_code) VALUES ($1, $2, $3, $4, $5, $6)';
             const insertPromises = products.flatMap(category => {
                 return category.products.map(product => {
-                    return pool.query(query, [product.product, product.price, product.product_url, product.product_image, category.id_category]);
+                    return pool.query(query, [product.product, product.price, product.product_url, product.product_image, category.id_category, product.product_code]);
                 });
             });
 
