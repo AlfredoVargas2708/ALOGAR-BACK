@@ -8,5 +8,6 @@ router.get('/category/:category_id', productsCtrl.getProductsByCategory);
 router.post('/', productsCtrl.addProduct);
 router.put('/', productsCtrl.editProduct);
 router.delete('/:product_id', productsCtrl.deleteProduct);
+router.get('/:code', productsCtrl.getProductByCode);
 
-module.exports = router
+module.exports = router;

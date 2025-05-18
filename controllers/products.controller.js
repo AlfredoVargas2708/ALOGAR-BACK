@@ -88,6 +88,25 @@ class ProductsController {
             res.status(500).json({ message: 'Error en el servidor' });
         }
     }
+
+    async getProductByCode(req, res) {
+        try {
+            const { code } = req.params;
+            const query = 'SELECT * FROM products WHERE product_code = $1';
+            const values = [code];
+
+            const result = await pool.query(query, values);
+
+            if (result.rowCount > 0) {
+                res.status(200).json(result.rows[0]);
+            } else {
+                res.status(404).json({ message: 'Producto no encontrado' });
+            }   
+        } catch (error) {
+            console.error('Error en getProductByCode:', error);
+            res.status(500).json({ message: 'Error en el servidor' });
+        }
+    }
 }
 
 module.exports = ProductsController;
