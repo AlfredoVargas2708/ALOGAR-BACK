@@ -5,5 +5,6 @@ const salesCtrl = new SalesController();
 
 router.get('/', salesCtrl.getSales);
 router.get('/count', salesCtrl.getCantSales);
+router.post('/', salesCtrl.createSale);
 
 module.exports = router;
