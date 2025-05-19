@@ -48,6 +48,7 @@ class WebController {
             let dataExcel = await readExcel(excelPath);
             let dataExcelCodes = dataExcel.map(item => item['Col2']);
             let dataExcelProducts = dataExcel.map(item => item['Col3']);
+            let dataExcelWeighable = dataExcel.map(item => item['Col4']);
 
             for (const category of categories.rows) {
                 const cantPages = await changeUrl(category.category_url);
@@ -63,6 +64,7 @@ class WebController {
                             product_url: urlPrincipal + $(element).find('a').attr('href'),
                             product_image: 'https:' + $(element).find('.grid-view-item__image').get(0).attribs['data-src'].split(' ')[0].replace('{width}', '300'),
                             product_code: dataExcelCodes[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] !== undefined ? dataExcelCodes[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] : null,
+                            product_weighable: dataExcelWeighable[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] !== undefined ? dataExcelWeighable[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] === 'Si' ? true : false : null,
                         };
                         categoryProducts.push(product);
                     });
@@ -77,10 +79,10 @@ class WebController {
             const truncateQuery = 'TRUNCATE TABLE products RESTART IDENTITY CASCADE';
             await pool.query(truncateQuery);
 
-            const query = 'INSERT INTO products (product, price, product_url, product_image, id_category, product_code) VALUES ($1, $2, $3, $4, $5, $6)';
+            const query = 'INSERT INTO products (product, price, product_url, product_image, id_category, product_code, product_weighable) VALUES ($1, $2, $3, $4, $5, $6, $7)';
             const insertPromises = products.flatMap(category => {
                 return category.products.map(product => {
-                    return pool.query(query, [product.product, product.price, product.product_url, product.product_image, category.id_category, product.product_code]);
+                    return pool.query(query, [product.product, product.price, product.product_url, product.product_image, category.id_category, product.product_code, product.product_weighable]);
                 });
             });
 
