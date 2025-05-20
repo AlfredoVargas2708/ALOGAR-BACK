@@ -14,16 +14,12 @@ class ProductsController {
     async getProductsByCategory(req, res) {
         try {
             const { category_id } = req.params;
-            const { page, pageSize } = req.query;
-            const pageSizeInt = parseInt(pageSize, 10);
-            const pageInt = parseInt(page, 10);
-            if (isNaN(pageSizeInt) || isNaN(pageInt) || pageSizeInt <= 0 || pageInt <= 0) {
-                return res.status(400).json({ message: 'Invalid page or pageSize' });
-            }
-            const offset = (pageInt - 1) * pageSizeInt;
+            const page = parseInt(req.query.page) || 1;       // página actual
+            const limit = parseInt(req.query.limit) || 10;    // items por página
+            const offset = (page - 1) * limit;
 
-            const query = 'SELECT product_id, product, price, product_url, product_image, product_code, id_category, category_id, category FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1 ORDER BY product_id ASC LIMIT $2 OFFSET $3';
-            const values = [category_id, pageSizeInt, offset];
+            const query = 'SELECT * FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1 ORDER BY product_id ASC LIMIT $2 OFFSET $3';
+            const values = [category_id, limit, offset];
             const products = await pool.query(query, values);
 
             const countQuery = 'SELECT COUNT(*) FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1';
@@ -33,6 +29,8 @@ class ProductsController {
                 res.status(200).send({
                     products: products.rows,
                     totalProducts: total,
+                    totalPages: Math.ceil(total / limit),
+                    currentPage: page,
                 });
             } else {
                 res.status(404).json({ message: 'No se encontraron productos para esta categoría' });
