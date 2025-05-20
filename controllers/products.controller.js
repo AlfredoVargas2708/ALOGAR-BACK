@@ -14,12 +14,26 @@ class ProductsController {
     async getProductsByCategory(req, res) {
         try {
             const { category_id } = req.params;
-            const query = 'SELECT product_id, product, price, product_url, product_image, id_category, category_id, category FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1 ORDER BY product_id ASC;';
-            const values = [category_id];
+            const { page, pageSize } = req.query;
+            const pageSizeInt = parseInt(pageSize, 10);
+            const pageInt = parseInt(page, 10);
+            if (isNaN(pageSizeInt) || isNaN(pageInt) || pageSizeInt <= 0 || pageInt <= 0) {
+                return res.status(400).json({ message: 'Invalid page or pageSize' });
+            }
+            const offset = (pageInt - 1) * pageSizeInt;
 
+            const query = 'SELECT product_id, product, price, product_url, product_image, product_code, id_category, category_id, category FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1 ORDER BY product_id ASC LIMIT $2 OFFSET $3';
+            const values = [category_id, pageSizeInt, offset];
             const products = await pool.query(query, values);
+
+            const countQuery = 'SELECT COUNT(*) FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1';
+            const total = parseInt((await pool.query(countQuery, [category_id])).rows[0].count, 10);
+
             if (products.rowCount > 0) {
-                res.status(200).send(products.rows);
+                res.status(200).send({
+                    products: products.rows,
+                    totalProducts: total,
+                });
             } else {
                 res.status(404).json({ message: 'No se encontraron productos para esta categoría' });
             }
@@ -40,7 +54,7 @@ class ProductsController {
 
             if (result.rowCount > 0) {
                 res.status(201).json({ message: 'Producto agregado correctamente', product: result.rows[0] });
-            }else {
+            } else {
                 res.status(400).json({ message: 'Error al agregar el producto' });
             }
         } catch (error) {
@@ -101,7 +115,7 @@ class ProductsController {
                 res.status(200).json(result.rows[0]);
             } else {
                 res.status(404).json({ message: 'Producto no encontrado' });
-            }   
+            }
         } catch (error) {
             console.error('Error en getProductByCode:', error);
             res.status(500).json({ message: 'Error en el servidor' });
