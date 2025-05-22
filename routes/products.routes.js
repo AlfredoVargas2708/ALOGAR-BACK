@@ -9,5 +9,6 @@ router.post('/', productsCtrl.addProduct);
 router.put('/', productsCtrl.editProduct);
 router.delete('/:product_id', productsCtrl.deleteProduct);
 router.get('/:code', productsCtrl.getProductByCode);
+router.get('/order/:order', productsCtrl.getProductsOrderBy);
 
 module.exports = router;

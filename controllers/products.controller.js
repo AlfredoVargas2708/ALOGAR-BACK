@@ -119,6 +119,34 @@ class ProductsController {
             res.status(500).json({ message: 'Error en el servidor' });
         }
     }
+
+    async getProductsOrderBy(req, res) {
+        try {
+            const { order } = req.params;
+            const page = parseInt(req.query.page) || 1;       // página actual
+            const limit = parseInt(req.query.limit) || 10;    // items por página
+            const offset = (page - 1) * limit;
+
+            const query = `SELECT * FROM products INNER JOIN categories ON products.id_category = categories.category_id ORDER BY ${order} LIMIT $1 OFFSET $2`;
+            const values = [limit, offset];
+
+            const result = await pool.query(query, values);
+
+            if (result.rowCount > 0) {
+                res.status(200).json({
+                    products: result.rows,
+                    totalProducts: result.rowCount,
+                    totalPages: Math.ceil(result.rowCount / limit),
+                    currentPage: page,
+                });
+            } else {
+                res.status(404).json({ message: 'No se encontraron productos' });
+            }
+        } catch (error) {
+            console.error('Error en getProductsOrderBy:', error);
+            res.status(500).json({ message: 'Error en el servidor' });
+        }
+    }
 }
 
 module.exports = ProductsController;
