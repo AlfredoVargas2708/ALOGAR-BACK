@@ -4,6 +4,7 @@ const urlPrincipal = 'https://alogar.cl'
 const pool = require('../PostgreSQL/db');
 const excelPath = 'C:\\Users\\varga\\OneDrive\\Documentos\\Proyecto-Alogar\\ALOGAR-BACK\\EXCEL\\ALOGAR_table_productos.xlsx'
 const readExcel = require('../EXCEL/read_excel.js');
+const { searchProducts } = require('../EXCEL/similitary.js');
 
 class WebController {
     async scrappingCategories(req, res) {
@@ -45,9 +46,8 @@ class WebController {
 
             const products = [];
 
+            const bestMatches = await searchProducts();
             let dataExcel = await readExcel(excelPath);
-            let dataExcelCodes = dataExcel.map(item => item['Col2']);
-            let dataExcelProducts = dataExcel.map(item => item['Col3']);
             let dataExcelWeighable = dataExcel.map(item => item['Col4']);
 
             for (const category of categories.rows) {
@@ -63,8 +63,8 @@ class WebController {
                             price: Number($(element).find('.price-item.price-item--regular').text().trim().replace('$', '').replace('.', '')),
                             product_url: urlPrincipal + $(element).find('a').attr('href'),
                             product_image: 'https:' + $(element).find('.grid-view-item__image').get(0).attribs['data-src'].split(' ')[0].replace('{width}', '300'),
-                            product_code: dataExcelCodes[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] !== undefined ? dataExcelCodes[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] : null,
-                            product_weighable: dataExcelWeighable[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] !== undefined ? dataExcelWeighable[dataExcelProducts.indexOf($(element).find('.grid-view-item__title').text().trim())] === 'Si' ? true : false : null,
+                            product_code: bestMatches.find(item => item.bestMatch === $(element).find('.grid-view-item__title').text().trim()) ? bestMatches.find(item => item.bestMatch === $(element).find('.grid-view-item__title').text().trim()).codeProductInExcel : null,
+                            product_weighable: dataExcelWeighable.find(item => item === $(element).find('.grid-view-item__title').text().trim()) === 'Si' ? true : false
                         };
                         categoryProducts.push(product);
                     });
@@ -91,15 +91,6 @@ class WebController {
             res.status(200).json({ message: 'Productos insertados correctamente', products });
         } catch (error) {
             console.error('Error en scrappingCategoriesProducts:', error);
-            res.status(500).json({ message: 'Error en el servidor' });
-        }
-    }
-
-    async getLogo(req, res) {
-        try {
-            const { $ } = await urlData(urlPrincipal);
-        } catch (error) {
-            console.error('Error en getLogo:', error);
             res.status(500).json({ message: 'Error en el servidor' });
         }
     }
