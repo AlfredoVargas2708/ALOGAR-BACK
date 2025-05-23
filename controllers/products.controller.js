@@ -3,7 +3,7 @@ const pool = require('../PostgreSQL/db');
 class ProductsController {
     async getProducts(req, res) {
         try {
-            const products = await pool.query('SELECT product_id, product, price, product_url, product_image, id_category, category_id, category FROM products INNER JOIN categories ON products.id_category = categories.category_id ORDER BY product_id ASC;');
+            const products = await pool.query('SELECT product_id, product, price, product_url, product_image, id_category, category_id, category FROM productos_unicos INNER JOIN categories ON productos_unicos.id_category = categories.category_id ORDER BY product_id ASC;');
             res.status(200).send(products.rows);
         } catch (error) {
             console.error('Error en getProducts:', error);
@@ -18,11 +18,11 @@ class ProductsController {
             const limit = parseInt(req.query.limit) || 10;    // items por página
             const offset = (page - 1) * limit;
 
-            const query = 'SELECT * FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1 ORDER BY product_id ASC LIMIT $2 OFFSET $3';
+            const query = 'SELECT * FROM productos_unicos WHERE $1 = ANY(productos_unicos.categorias) ORDER BY product_id ASC LIMIT $2 OFFSET $3';
             const values = [category_id, limit, offset];
             const products = await pool.query(query, values);
 
-            const countQuery = 'SELECT COUNT(*) FROM products INNER JOIN categories ON products.id_category = categories.category_id WHERE categories.category_id = $1';
+            const countQuery = 'SELECT COUNT(*) FROM productos_unicos WHERE $1 = ANY(productos_unicos.categorias)';
             const total = parseInt((await pool.query(countQuery, [category_id])).rows[0].count, 10);
 
             if (products.rowCount > 0) {
@@ -63,15 +63,15 @@ class ProductsController {
 
     async editProduct(req, res) {
         try {
-            const { product_id, product, price, product_url, product_image, id_category } = req.body;
+            const { codigo, id, name, price } = req.body;
 
-            const query = 'UPDATE products SET product = $1, price = $2, product_url = $3, product_image = $4, id_category = $5 WHERE product_id = $6';
-            const values = [product, price, product_url, product_image, id_category, product_id];
+            const query = 'UPDATE productos_unicos SET product = $1, price = $2, product_code = $3 WHERE product_id = $4';
+            const values = [name, price, codigo, id];
 
             const result = await pool.query(query, values);
 
             if (result.rowCount > 0) {
-                res.status(200).json({ message: 'Producto actualizado correctamente' });
+                res.status(200).json({ message: 'Producto actualizado correctamente', product: result.rows[0] });
             } else {
                 res.status(404).json({ message: 'Producto no encontrado' });
             }
@@ -85,7 +85,7 @@ class ProductsController {
         try {
             const { product_id } = req.params;
 
-            const query = 'DELETE FROM products WHERE product_id = $1';
+            const query = 'DELETE FROM productos_unicos WHERE product_id = $1';
             const values = [product_id];
 
             const result = await pool.query(query, values);
@@ -104,7 +104,7 @@ class ProductsController {
     async getProductByCode(req, res) {
         try {
             const { code } = req.params;
-            const query = 'SELECT * FROM products WHERE product_code = $1';
+            const query = 'SELECT * FROM productos_unicos WHERE product_code = $1';
             const values = [code];
 
             const result = await pool.query(query, values);
@@ -127,7 +127,7 @@ class ProductsController {
             const limit = parseInt(req.query.limit) || 10;    // items por página
             const offset = (page - 1) * limit;
 
-            const query = `SELECT * FROM products INNER JOIN categories ON products.id_category = categories.category_id ORDER BY ${order} LIMIT $1 OFFSET $2`;
+            const query = `SELECT * FROM productos_unicos INNER JOIN categories ON productos_unicos.id_category = categories.category_id ORDER BY ${order} LIMIT $1 OFFSET $2`;
             const values = [limit, offset];
 
             const result = await pool.query(query, values);
