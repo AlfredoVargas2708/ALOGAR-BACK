@@ -48,10 +48,11 @@ class ProductsController {
 
     async addProduct(req, res) {
         try {
-            const { product, price, product_url, product_image, id_category } = req.body;
+            const { codigo, name, price, category, url, image, weighable } = req.body;
 
-            const query = 'INSERT INTO products (product, price, product_url, product_image, id_category) VALUES ($1, $2, $3, $4, $5) RETURNING *';
-            const values = [product, price, product_url, product_image, id_category];
+
+            const query = 'INSERT INTO productos_unicos (product_code, product, price, categorias, product_url, product_image, product_weighable) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *';
+            const values = [codigo, name, price, category, url, image, weighable];
 
             const result = await pool.query(query, values);
 
